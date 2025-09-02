@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/hewo233/hdu-dx2/db"
 	models "github.com/hewo233/hdu-dx2/models"
+	"github.com/hewo233/hdu-dx2/shared/consts"
 )
 
 func GetPhoneFromJWT(c *gin.Context) (string, *models.User, error) {
@@ -12,7 +13,7 @@ func GetPhoneFromJWT(c *gin.Context) (string, *models.User, error) {
 
 	user := models.NewUser()
 
-	result := db.DB.Table("users").Where("phone = ?", phone).First(user)
+	result := db.DB.Table(consts.UserTable).Where("phone = ?", phone).First(user)
 	if result.Error != nil {
 		return "", nil, result.Error
 	}

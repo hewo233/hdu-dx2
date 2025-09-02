@@ -65,9 +65,9 @@ func CreateFamily(c *gin.Context) {
 }
 
 type addUserToFamilyRequest struct {
-	FamilyD  uint   `json:"family_id" binding:"required"`
+	FamilyID uint   `json:"family_id" binding:"required"`
 	UserID   uint   `json:"user_id" binding:"required"`
-	Role     string `json:"role" binding:"required,oneof=father mother son daughter"`
+	Role     string `json:"role" binding:"required"`
 	Password string `json:"password" binding:"required"`
 }
 
@@ -102,7 +102,7 @@ func AddUserToFamily(c *gin.Context) {
 	findFamily := models.NewFamily()
 
 	// check family exists
-	if err := db.DB.Table(consts.FamilyTable).Where("id = ?", req.FamilyD).First(findFamily).Error; err != nil {
+	if err := db.DB.Table(consts.FamilyTable).Where("id = ?", req.FamilyID).First(findFamily).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"errno":   40004,
@@ -158,7 +158,7 @@ func AddUserToFamily(c *gin.Context) {
 	}
 
 	// check if user already in family
-	result := db.DB.Table(consts.FamilyUserTable).Where("user_id = ? AND family_id = ?", req.UserID, req.FamilyD).Limit(1).Find(&models.FamilyUser{})
+	result := db.DB.Table(consts.FamilyUserTable).Where("user_id = ? AND family_id = ?", req.UserID, req.FamilyID).Limit(1).Find(&models.FamilyUser{})
 	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"errno":   50000,
@@ -180,7 +180,7 @@ func AddUserToFamily(c *gin.Context) {
 
 	familyUser := map[string]interface{}{
 		"user_id":   req.UserID,
-		"family_id": req.FamilyD,
+		"family_id": req.FamilyID,
 		"role":      req.Role,
 	}
 

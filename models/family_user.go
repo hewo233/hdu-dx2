@@ -29,14 +29,11 @@ func NewFamily() *Family {
 }
 
 type FamilyUser struct {
-	UserID   uint   `json:"user_id" gorm:"uniqueIndex:idx_user_family"`
-	FamilyID uint   `json:"family_id" gorm:"uniqueIndex:idx_user_family"`
+	UserID   uint   `json:"user_id" gorm:"primaryKey"`
+	FamilyID uint   `json:"family_id" gorm:"primaryKey"`
 	Role     string `json:"role" gorm:"size:20;not null"` // father, mother, son, daughter...
 
 	CreateAt time.Time
 	UpdateAt time.Time
-	DeleteAt time.Time
-
-	User   User   `json:"user" gorm:"foreignKey:UserID"`
-	Family Family `json:"family" gorm:"foreignKey:FamilyID"`
+	DeleteAt gorm.DeletedAt `gorm:"index"`
 }
