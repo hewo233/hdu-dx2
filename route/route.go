@@ -30,6 +30,8 @@ func InitRoute() {
 		user.POST("/update", handler.ModifyUserSelf)
 		// Test
 		user.GET("/list", handler.ListUser)
+
+		user.GET("/family", handler.ListUserFamily)
 	}
 
 	family := R.Group("/family")
@@ -37,5 +39,6 @@ func InitRoute() {
 	{
 		family.POST("/create", handler.CreateFamily)
 		family.POST("/join", handler.AddUserToFamily)
+		family.GET("/members", handler.ListFamilyMember)
 	}
 }

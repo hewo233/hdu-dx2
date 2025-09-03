@@ -366,3 +366,55 @@ func ListUser(c *gin.Context) {
 		"results": rep,
 	})
 }
+
+func ListUserFamily(c *gin.Context) {
+	_, user, err := jwt.GetPhoneFromJWT(c)
+	if err != nil {
+		if err.Error() == "user not found" {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"errno":   40101,
+				"message": "Unauthorized, user in jwt not found",
+			})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"errno":   50007,
+				"message": "failed to get user info: " + err.Error(),
+			})
+		}
+		c.Abort()
+		return
+	}
+
+	var familyUsers []models.FamilyUser
+
+	result := db.DB.Table(consts.FamilyUserTable).Where("user_id = ?", user.ID).Find(&familyUsers)
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"errno":   50008,
+			"message": "failed to query database: " + result.Error.Error(),
+		})
+		c.Abort()
+		return
+	}
+
+	var families []models.Family
+	for _, fu := range familyUsers {
+		var family models.Family
+		res := db.DB.Table(consts.FamilyTable).Where("id = ?", fu.FamilyID).First(&family)
+		if res.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"errno":   50009,
+				"message": "failed to query database: " + res.Error.Error(),
+			})
+			c.Abort()
+			return
+		}
+		families = append(families, family)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"errno":   20000,
+		"message": "get user families successfully",
+		"results": families,
+	})
+}

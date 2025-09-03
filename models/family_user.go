@@ -33,7 +33,7 @@ type FamilyUser struct {
 	FamilyID uint   `json:"family_id" gorm:"primaryKey"`
 	Role     string `json:"role" gorm:"size:20;not null"` // father, mother, son, daughter...
 
-	CreateAt time.Time
-	UpdateAt time.Time
-	DeleteAt gorm.DeletedAt `gorm:"index"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
 }

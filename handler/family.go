@@ -198,3 +198,102 @@ func AddUserToFamily(c *gin.Context) {
 		"message": "user added to family successfully",
 	})
 }
+
+type listFamilyMemberRequest struct {
+	FamilyID uint `json:"family_id" binding:"required"`
+}
+
+func ListFamilyMember(c *gin.Context) {
+	var req listFamilyMemberRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"errno":   40000,
+			"message": "failed to bind ListFamilyMember Request: " + err.Error(),
+		})
+		c.Abort()
+		return
+	}
+
+	// only family member can list family members
+	_, user, err := jwt.GetPhoneFromJWT(c)
+	if err != nil {
+		if err.Error() == "user not found" {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"errno":   40101,
+				"message": "Unauthorized, user in jwt not found",
+			})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"errno":   50007,
+				"message": "failed to get user info: " + err.Error(),
+			})
+		}
+		c.Abort()
+		return
+	}
+
+	// check if user is in family
+	result := db.DB.Table(consts.FamilyUserTable).Where("user_id = ? AND family_id = ?", user.ID, req.FamilyID).Limit(1).Find(&models.FamilyUser{})
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"errno":   50000,
+			"message": "failed to query database: " + result.Error.Error(),
+		})
+		c.Abort()
+		return
+	}
+	if result.RowsAffected == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"errno":   40008,
+			"message": "user is not in the family",
+		})
+		c.Abort()
+		return
+	}
+
+	findFamily := models.NewFamily()
+
+	// check family exists
+	if err := db.DB.Table(consts.FamilyTable).Where("id = ?", req.FamilyID).First(findFamily).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"errno":   40004,
+				"message": "this family does not exist",
+			})
+			c.Abort()
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"errno":   50000,
+			"message": "failed to query database: " + err.Error(),
+		})
+		c.Abort()
+		return
+	}
+
+	type FamilyMember struct {
+		UserID   uint   `json:"user_id"`
+		Username string `json:"username"`
+		Role     string `json:"role"`
+	}
+
+	var members []FamilyMember
+
+	if err := db.DB.Table(consts.FamilyUserTable).Where("family_id = ?", req.FamilyID).
+		Select("family_user.user_id, \"user\".username, family_user.role").
+		Joins("LEFT JOIN \"user\" ON family_user.user_id = \"user\".id").
+		Scan(&members).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"errno":   50000,
+			"message": "failed to query database: " + err.Error(),
+		})
+		c.Abort()
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"errno":   20000,
+		"message": "success",
+		"members": members,
+	})
+}
