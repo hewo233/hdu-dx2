@@ -9,6 +9,7 @@ import (
 	"github.com/hewo233/hdu-dx2/utils/jwt"
 	"gorm.io/gorm"
 	"net/http"
+	"strconv"
 )
 
 type createFamilyRequest struct {
@@ -199,16 +200,13 @@ func AddUserToFamily(c *gin.Context) {
 	})
 }
 
-type listFamilyMemberRequest struct {
-	FamilyID uint `json:"family_id" binding:"required"`
-}
-
 func ListFamilyMember(c *gin.Context) {
-	var req listFamilyMemberRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	familyIDStr := c.Param("family_id")
+	familyID, err := strconv.ParseUint(familyIDStr, 10, 32)
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"errno":   40000,
-			"message": "failed to bind ListFamilyMember Request: " + err.Error(),
+			"message": "invalid family_id: " + err.Error(),
 		})
 		c.Abort()
 		return
@@ -233,7 +231,7 @@ func ListFamilyMember(c *gin.Context) {
 	}
 
 	// check if user is in family
-	result := db.DB.Table(consts.FamilyUserTable).Where("user_id = ? AND family_id = ?", user.ID, req.FamilyID).Limit(1).Find(&models.FamilyUser{})
+	result := db.DB.Table(consts.FamilyUserTable).Where("user_id = ? AND family_id = ?", user.ID, familyID).Limit(1).Find(&models.FamilyUser{})
 	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"errno":   50000,
@@ -254,7 +252,7 @@ func ListFamilyMember(c *gin.Context) {
 	findFamily := models.NewFamily()
 
 	// check family exists
-	if err := db.DB.Table(consts.FamilyTable).Where("id = ?", req.FamilyID).First(findFamily).Error; err != nil {
+	if err := db.DB.Table(consts.FamilyTable).Where("id = ?", uint(familyID)).First(findFamily).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"errno":   40004,
@@ -279,7 +277,7 @@ func ListFamilyMember(c *gin.Context) {
 
 	var members []FamilyMember
 
-	if err := db.DB.Table(consts.FamilyUserTable).Where("family_id = ?", req.FamilyID).
+	if err := db.DB.Table(consts.FamilyUserTable).Where("family_id = ?", uint(familyID)).
 		Select("family_user.user_id, \"user\".username, family_user.role").
 		Joins("LEFT JOIN \"user\" ON family_user.user_id = \"user\".id").
 		Scan(&members).Error; err != nil {

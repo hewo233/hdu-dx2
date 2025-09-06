@@ -39,6 +39,15 @@ func InitRoute() {
 	{
 		family.POST("/create", handler.CreateFamily)
 		family.POST("/join", handler.AddUserToFamily)
-		family.GET("/members", handler.ListFamilyMember)
+		family.GET("/members/:family_id", handler.ListFamilyMember)
+	}
+
+	financial := R.Group("/financial")
+	financial.Use(middleware.JWTAuth(consts.User))
+	{
+		financial.POST("/bill/create/:family_id", handler.CreateBill)
+		financial.GET("/bill/list/:family_id", handler.ListBills)
+		financial.GET("/bill/select/:family_id", handler.SelectBills)
+		financial.DELETE("/bill/delete/:family_id/:bill_id", handler.DeleteBill)
 	}
 }

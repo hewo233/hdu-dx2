@@ -12,4 +12,6 @@ const (
 
 	MB     = 1024 * 1024
 	TreeMB = 3 * MB
+
+	TimeFormat = "2006-01-02 15:04:05"
 )
