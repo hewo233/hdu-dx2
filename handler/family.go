@@ -295,3 +295,39 @@ func ListFamilyMember(c *gin.Context) {
 		"members": members,
 	})
 }
+
+func ListAllFamilies(c *gin.Context) {
+	_, _, err := jwt.GetPhoneFromJWT(c)
+	if err != nil {
+		if err.Error() == "user not found" {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"errno":   40101,
+				"message": "Unauthorized, user in jwt not found",
+			})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"errno":   50007,
+				"message": "failed to get user info: " + err.Error(),
+			})
+		}
+		c.Abort()
+		return
+	}
+
+	var families []models.Family
+	if err := db.DB.Table(consts.FamilyTable).Find(&families).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"errno":   50000,
+			"message": "failed to query database: " + err.Error(),
+		})
+		c.Abort()
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"errno":    20000,
+		"message":  "success",
+		"families": families,
+	})
+
+}
