@@ -40,7 +40,7 @@ func InitRoute() {
 		family.POST("/create", handler.CreateFamily)
 		family.POST("/join", handler.AddUserToFamily)
 		family.GET("/members/:family_id", handler.ListFamilyMember)
-		family.GET("/list", handler.ListUserFamily)
+		family.GET("/list", handler.ListAllFamilies)
 	}
 
 	financial := R.Group("/financial")
